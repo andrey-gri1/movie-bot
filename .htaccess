@@ -1,0 +1,14 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Перенаправляем все запросы на webhook.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ webhook.php [QSA,L]
+</IfModule>
+
+# Защита от прямого доступа к файлам
+<FilesMatch "\.(env|log)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>

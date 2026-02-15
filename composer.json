@@ -1,0 +1,13 @@
+{
+    "name": "movie-master/bot",
+    "description": "Telegram Bot for Movie Recommendations",
+    "type": "project",
+    "require": {
+        "php": ">=7.4",
+        "telegram-bot/api": "^2.3",
+        "vlucas/phpdotenv": "^5.5",
+        "ext-pdo": "*",
+        "ext-json": "*",
+        "ext-curl": "*"
+    }
+}
