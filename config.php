@@ -1,11 +1,10 @@
 <?php
-// config.php
+// config.php - проверьте что функция logMessage определена
 
 require_once __DIR__ . '/vendor/autoload.php';
 
 use Dotenv\Dotenv;
 
-// Загружаем переменные окружения
 $dotenv = Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
@@ -25,8 +24,10 @@ if (!is_dir(CACHE_DIR)) {
     mkdir(CACHE_DIR, 0755, true);
 }
 
-// Функция для логирования
+// Функция для логирования - должна быть ТОЛЬКО ЗДЕСЬ!
 function logMessage($message) {
     $date = date('Y-m-d H:i:s');
-    file_put_contents(LOG_FILE, "[$date] $message\n", FILE_APPEND);
+    $logLine = "[$date] $message\n";
+    echo $logLine; // Вывод в консоль
+    file_put_contents(LOG_FILE, $logLine, FILE_APPEND); // Запись в файл
 }

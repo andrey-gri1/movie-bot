@@ -1,11 +1,12 @@
 <?php
-// database.php
+// database.php - ИСПРАВЛЕННАЯ ВЕРСИЯ
 
 require_once __DIR__ . '/config.php';
 
 class Database {
     private static $instance = null;
     private $pdo;
+    private $connected = false;
     
     private function __construct() {
         try {
@@ -14,12 +15,14 @@ class Database {
             $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $this->pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
             $this->pdo->exec("SET NAMES utf8mb4");
+            $this->connected = true;
             
             $this->createTables();
             logMessage("✅ Database connected successfully");
         } catch (PDOException $e) {
             logMessage("❌ Database connection error: " . $e->getMessage());
-            throw new Exception("Database connection failed");
+            $this->connected = false;
+            // Не выбрасываем исключение, просто логируем ошибку
         }
     }
     
@@ -30,11 +33,17 @@ class Database {
         return self::$instance;
     }
     
+    public function isConnected() {
+        return $this->connected;
+    }
+    
     public function getConnection() {
         return $this->pdo;
     }
     
     private function createTables() {
+        if (!$this->connected) return;
+        
         $sql = "
         CREATE TABLE IF NOT EXISTS users (
             user_id BIGINT PRIMARY KEY,
@@ -117,6 +126,10 @@ class Database {
     }
     
     public function getOrCreateUser($userId, $username, $firstName, $lastName = '') {
+        if (!$this->connected) {
+            return ['user_id' => $userId, 'username' => $username, 'first_name' => $firstName];
+        }
+        
         try {
             // Проверяем существование пользователя
             $stmt = $this->pdo->prepare("SELECT * FROM users WHERE user_id = ?");
@@ -158,6 +171,8 @@ class Database {
     }
     
     public function addToFavorites($userId, $movieData) {
+        if (!$this->connected) return false;
+        
         try {
             $kinopoiskId = $movieData['kinopoiskId'] ?? 0;
             $title = $movieData['nameRu'] ?? $movieData['nameEn'] ?? 'Н/Д';
@@ -192,6 +207,8 @@ class Database {
     }
     
     public function getFavorites($userId) {
+        if (!$this->connected) return [];
+        
         try {
             $stmt = $this->pdo->prepare("
                 SELECT movie_data FROM favorites 
@@ -215,6 +232,8 @@ class Database {
     }
     
     public function removeFromFavorites($userId, $kinopoiskId) {
+        if (!$this->connected) return false;
+        
         try {
             $stmt = $this->pdo->prepare("DELETE FROM favorites WHERE user_id = ? AND kinopoisk_id = ?");
             $stmt->execute([$userId, $kinopoiskId]);
@@ -233,6 +252,8 @@ class Database {
     }
     
     public function logMovieView($userId, $movieId, $category = null, $genre = null) {
+        if (!$this->connected) return false;
+        
         try {
             // Добавляем в историю
             $stmt = $this->pdo->prepare("
@@ -275,6 +296,15 @@ class Database {
     }
     
     public function getUserStats($userId) {
+        if (!$this->connected) {
+            return [
+                'total' => 0,
+                'favorites' => 0,
+                'by_genre' => [],
+                'recent_views' => []
+            ];
+        }
+        
         try {
             // Информация о пользователе
             $stmt = $this->pdo->prepare("SELECT * FROM users WHERE user_id = ?");
@@ -285,7 +315,8 @@ class Database {
                 return [
                     'total' => 0,
                     'favorites' => 0,
-                    'by_genre' => []
+                    'by_genre' => [],
+                    'recent_views' => []
                 ];
             }
             
@@ -331,12 +362,15 @@ class Database {
             return [
                 'total' => 0,
                 'favorites' => 0,
-                'by_genre' => []
+                'by_genre' => [],
+                'recent_views' => []
             ];
         }
     }
     
     public function cacheMovie($movieData) {
+        if (!$this->connected) return false;
+        
         try {
             $kinopoiskId = $movieData['kinopoiskId'] ?? 0;
             $title = $movieData['nameRu'] ?? $movieData['nameEn'] ?? 'Н/Д';
@@ -371,6 +405,8 @@ class Database {
     }
     
     public function getCachedMovie($kinopoiskId) {
+        if (!$this->connected) return null;
+        
         try {
             $stmt = $this->pdo->prepare("SELECT movie_data FROM movie_cache WHERE kinopoisk_id = ?");
             $stmt->execute([$kinopoiskId]);
